@@ -1,56 +1,21 @@
-# Welcome to your Expo app 👋
+# Omiara mobile app (Expo)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo SDK 58, expo-router, TypeScript, TanStack Query. Talks to the Omiara Laravel API (JWT).
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+## Run
 ```bash
-npm run reset-project
+npm install
+EXPO_PUBLIC_API_URL=http://<your-lan-ip>:8000/api/v1 npx expo start
 ```
+`app.json` `extra.apiUrl` is the fallback (`10.0.2.2` = Android emulator host). Use your machine's LAN IP on a real phone.
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+## Push notifications
+Run `eas init` once and put the project id in `app.json` → `extra.eas.projectId`. Until then push registration is skipped (the in-app Alerts inbox still works). Pushes need a physical device.
 
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Notes
+- Chat has no realtime yet: the open conversation polls every 5 s, the matches list every 30 s.
+- Payments: Paystack opens in the in-app browser; the order screen then polls with `?refresh=1` until it settles. Bank transfer shows the account details plus a "I have paid" form.
+- Nothing business-related is hardcoded: costs, limits, plans, packages, radius options and age floors all come from the API.
+- Screens: welcome/login/register, appeal-a-suspension, Discover (swipe, match), Matches, Chat (report/block/unmatch), Alerts, Coins (buy, history, orders), Plans, Me (profile, photos, verification, preferences, location, notifications, appeals).
+- A `report` screen and `GET /states`, `GET /conversations/{id}/messages` are used: make sure the latest API overlay is applied.
+- Not tested on a device or simulator in the build sandbox; only `tsc --noEmit` has been run.

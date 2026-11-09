@@ -1,13 +1,14 @@
 {
   "expo": {
-    "name": "omiara-mobile",
-    "slug": "omiara-mobile",
+    "name": "Omiara",
+    "slug": "omiara",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "omiaramobile",
+    "scheme": "omiara",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "ng.omiara.app",
       "icon": "./assets/expo.icon"
     },
     "android": {
@@ -17,10 +18,10 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "ng.omiara.app"
     },
     "web": {
-      "output": "server",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -32,11 +33,32 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#E4572E"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Omiara needs your photos to add them to your profile.",
+          "cameraPermission": "Omiara needs the camera to take your verification selfie."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Omiara uses your approximate location to show people near you."
+        }
       ]
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+      "typedRoutes": false
+    },
+    "extra": {
+      "apiUrl": "http://10.0.2.2:8000/api/v1"
     }
   }
 }
