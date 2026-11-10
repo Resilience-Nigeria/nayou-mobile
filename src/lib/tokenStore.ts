@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-const KEY = 'omiara.token';
+const KEY = 'nayou.token';
 let memory: string | null = null;
 
 // expo-secure-store has no web implementation, so the browser build keeps the token in sessionStorage

@@ -1,10 +1,10 @@
-// Visual language: warm, calm, Nigerian-green primary with a coral accent on a cream background.
+// Visual language: the Nayou logo's green and crimson on a warm cream background.
 export const colors = {
-  primary: '#0E6B4D',
-  primaryDark: '#0A4F39',
-  primarySoft: '#E3F1EB',
-  accent: '#E4572E',
-  accentSoft: '#FCE9E2',
+  primary: '#00843D',
+  primaryDark: '#00562A',
+  primarySoft: '#E1F3E8',
+  accent: '#E80840',
+  accentSoft: '#FDE6EC',
   gold: '#C9962B',
   goldSoft: '#FBF1D9',
   bg: '#FBF8F3',
@@ -14,7 +14,7 @@ export const colors = {
   border: '#E8E2D8',
   danger: '#B3261E',
   dangerSoft: '#FBE9E7',
-  success: '#1E7B4F',
+  success: '#00843D',
   overlay: 'rgba(0,0,0,0.45)',
   white: '#FFFFFF',
 };

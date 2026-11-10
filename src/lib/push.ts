@@ -16,7 +16,7 @@ Notifications.setNotificationHandler({
 export async function registerPush(): Promise<void> {
   if (!Device.isDevice) return; // simulators cannot receive pushes
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', { name: 'Omiara', importance: Notifications.AndroidImportance.DEFAULT });
+    await Notifications.setNotificationChannelAsync('default', { name: 'Nayou', importance: Notifications.AndroidImportance.DEFAULT });
   }
   let { status } = await Notifications.getPermissionsAsync();
   if (status !== 'granted') status = (await Notifications.requestPermissionsAsync()).status;

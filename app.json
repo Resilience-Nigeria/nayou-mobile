@@ -1,25 +1,35 @@
 {
   "expo": {
-    "name": "Omiara",
-    "slug": "omiara",
+    "name": "Nayou",
+    "slug": "nayou",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "omiara",
-    "userInterfaceStyle": "automatic",
+    "scheme": "nayou",
+    "userInterfaceStyle": "light",
     "ios": {
-      "bundleIdentifier": "ng.omiara.app",
-      "icon": "./assets/expo.icon"
+      "bundleIdentifier": "ng.nayou.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Nayou needs the microphone for voice calls.",
+        "UIBackgroundModes": [
+          "audio"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#00843D",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "ng.omiara.app"
+      "package": "ng.nayou.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -29,30 +39,33 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#FFFFFF",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 240,
+          "resizeMode": "contain"
         }
       ],
       [
         "expo-notifications",
         {
-          "color": "#E4572E"
+          "color": "#E80840"
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Omiara needs your photos to add them to your profile.",
-          "cameraPermission": "Omiara needs the camera to take your verification selfie."
+          "photosPermission": "Nayou needs your photos to add them to your profile.",
+          "cameraPermission": "Nayou needs the camera to take your verification selfie."
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Omiara uses your approximate location to show people near you."
+          "locationWhenInUsePermission": "Nayou uses your approximate location to show people near you."
         }
-      ]
+      ],
+      "@livekit/react-native-expo-plugin",
+      "@config-plugins/react-native-webrtc"
     ],
     "experiments": {
       "typedRoutes": false

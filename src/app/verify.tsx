@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { Banner, Body, Button, Card, ErrorView, H2, Loading, Screen, VerifiedBadge, showError } from '../components/ui';
+import { appendFile } from '../lib/upload';
 import { api } from '../lib/api';
 import type { VerificationStatus } from '../lib/types';
 
@@ -21,7 +22,7 @@ export default function Verify() {
       if (r.canceled) return;
       const a = r.assets[0];
       const f = new FormData();
-      f.append('selfie', { uri: a.uri, name: 'selfie.jpg', type: a.mimeType ?? 'image/jpeg' } as any);
+      await appendFile(f, 'selfie', a, 'selfie.jpg');
       await api.upload(`/verification/selfie/${s.session_id}`, f);
       setSent(true);
       qc.invalidateQueries({ queryKey: ['verification'] });

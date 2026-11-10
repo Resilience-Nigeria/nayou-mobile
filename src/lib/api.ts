@@ -1,3 +1,4 @@
+import { APP_NAME } from './brand';
 import { API_URL } from './config';
 import { clearToken, getToken, saveToken } from './tokenStore';
 
@@ -90,7 +91,7 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
     }
   } catch (e) {
     if ((e as Error).name === 'AbortError') throw e;
-    throw new ApiError('Cannot reach Omiara. Check your connection and try again.', 'network_error', 0);
+    throw new ApiError(`Cannot reach ${APP_NAME}${__DEV__ ? ` at ${API_URL} (${method} ${path}: ${(e as Error).message})` : ''}. Check your connection and try again.`, 'network_error', 0);
   }
 
   let json: Envelope<T> | null = null;

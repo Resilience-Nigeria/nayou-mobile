@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { Banner, Body, Button, ErrorView, Loading, Screen, showError } from '../components/ui';
+import { appendFile } from '../lib/upload';
 import { api } from '../lib/api';
 import type { Photo } from '../lib/types';
 import { colors, font, radius, space } from '../theme/theme';
@@ -24,7 +25,7 @@ export default function Photos() {
     setBusy(true);
     try {
       const f = new FormData();
-      f.append('photo', { uri: a.uri, name: a.fileName ?? 'photo.jpg', type: a.mimeType ?? 'image/jpeg' } as any);
+      await appendFile(f, 'photo', a, 'photo.jpg');
       await api.upload('/photos', f);
       refresh();
     } catch (e) { showError(e, 'Could not upload photo'); } finally { setBusy(false); }
@@ -42,7 +43,7 @@ export default function Photos() {
   if (q.error) return <ErrorView error={q.error} onRetry={() => q.refetch()} />;
   return (
     <Screen scroll>
-      <Body muted>Clear photos of your face work best. Every photo is checked before others can see it.</Body>
+      <Body muted>Clear photos of your face work best. Your photos show up straight away. If one is reported, our team may review or remove it.</Body>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.md }}>
         {q.data!.map((p) => (
           <Pressable key={p.id} onPress={() => options(p)} style={{ width: '47%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.border }}>

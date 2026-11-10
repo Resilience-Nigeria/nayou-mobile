@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Banner, Body, Button, Chip, Field, H1, Row, Screen, showError } from '../../components/ui';
 import { ApiError, api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
+import { API_URL } from '../../lib/config';
 import { GENDERS, type PublicConfig, type StateItem } from '../../lib/types';
 import { colors, font, space } from '../../theme/theme';
 
@@ -59,8 +60,20 @@ export default function Register() {
         {err.gender?.[0] ? <Text style={{ color: colors.danger, fontSize: 13 }}>{err.gender[0]}</Text> : null}
       </View>
 
+      {states.error || config.error ? (
+        <Banner tone="warn">
+          <Text style={font.body}>Could not reach the server{__DEV__ ? ` at ${API_URL}` : ''}. Check your connection.</Text>
+          <Pressable onPress={() => { states.refetch(); config.refetch(); }}><Text style={{ color: colors.primary, fontWeight: '700', marginTop: 6 }}>Try again</Text></Pressable>
+        </Banner>
+      ) : null}
       <View style={{ gap: 6 }}>
         <Text style={font.label}>State</Text>
+        {states.error ? (
+          <Banner tone="warn">
+            {`Could not load the list of states from ${API_URL}. On a phone, "localhost" is the phone itself: use your computer's Wi-Fi IP address.`}
+            <Pressable onPress={() => { states.refetch(); config.refetch(); }}><Text style={{ color: colors.primary, fontWeight: '700', marginTop: 6 }}>Try again</Text></Pressable>
+          </Banner>
+        ) : null}
         <Chip label={stateName ?? 'Choose your state'} selected={!!stateName} onPress={() => setPickState((v) => !v)} />
         {pickState ? (
           <Row style={{ flexWrap: 'wrap', gap: space.sm }}>

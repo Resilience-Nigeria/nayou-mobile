@@ -3,14 +3,15 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, Text, View } from 'react-native';
 import { Banner, Button, Chip, Empty, ErrorView, Loading, Row, Screen, VerifiedBadge, showError } from '../../components/ui';
 import { ApiError, api } from '../../lib/api';
+import { openChatWith } from '../../lib/openChat';
 import { goalLabel, type Card, type DiscoveryMeta } from '../../lib/types';
 import { colors, font, radius, shadow, space } from '../../theme/theme';
 
 type SwipeResult = { action: string; matched: boolean; match: { id: string; conversation_id: string } | null };
-const SORTS: [string, string][] = [['distance', 'Nearest'], ['active', 'Active'], ['new', 'New']];
+const SORTS: [string, string][] = [['distance', 'Nearest'], ['best', 'Best match']];
 
 export default function Discover() {
   const qc = useQueryClient();
@@ -21,6 +22,7 @@ export default function Discover() {
   const [matched, setMatched] = useState<{ card: Card; match: SwipeResult['match'] } | null>(null);
   const [busy, setBusy] = useState(false);
   const seen = useRef(new Set<string>());
+  const explainedSuper = useRef(false);
 
   const q = useInfiniteQuery({
     queryKey: ['discover', sort, radius_],
@@ -64,13 +66,25 @@ export default function Discover() {
       if (r.matched) {
         setMatched({ card: current, match: r.match });
         qc.invalidateQueries({ queryKey: ['matches'] });
+        qc.invalidateQueries({ queryKey: ['conversations'] });
       }
+      if (action !== 'pass') qc.invalidateQueries({ queryKey: ['likes'] });
     } catch (e) {
       if (e instanceof ApiError && e.code === 'daily_limit_reached') setLimitMsg(e.friendly);
       else showError(e, 'Could not record that');
     } finally {
       setBusy(false);
     }
+  }
+
+  function superLike() {
+    if (!current) return;
+    if (explainedSuper.current) return swipe('super_like');
+    Alert.alert(
+      `Super like ${current.display_name}?`,
+      'A Super like tells them you are really interested. It counts as a like and you only get a limited number each day. You can find everyone you have liked under Chats → Liked.',
+      [{ text: 'Cancel', style: 'cancel' }, { text: 'Super like', onPress: () => { explainedSuper.current = true; swipe('super_like'); } }],
+    );
   }
 
   function report() {
@@ -96,7 +110,7 @@ export default function Discover() {
       {current ? (
         <View style={{ flex: 1, gap: space.lg }}>
           <View style={[{ flex: 1, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.border }, shadow.card]}>
-            {current.photo?.url ? <Image source={{ uri: current.photo.url }} style={{ flex: 1 }} contentFit="cover" transition={150} /> : (
+            {current.photo?.url ? <Pressable style={{ flex: 1 }} onPress={() => router.push({ pathname: '/person/[id]', params: { id: current.id } })}><Image source={{ uri: current.photo.url }} style={{ flex: 1 }} contentFit="cover" transition={150} /></Pressable> : (
               <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="person" size={96} color={colors.textMuted} /></View>
             )}
             <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: space.lg, gap: 6, backgroundColor: 'rgba(0,0,0,0.5)' }}>
@@ -114,9 +128,10 @@ export default function Discover() {
               <Ionicons name="flag-outline" size={18} color={colors.white} />
             </Pressable>
           </View>
-          <Row style={{ justifyContent: 'center', gap: space.xl }}>
+          <Row style={{ justifyContent: 'center', alignItems: 'flex-start', gap: space.lg }}>
             <RoundBtn icon="close" color={colors.textMuted} onPress={() => swipe('pass')} disabled={busy} label="Pass" />
-            <RoundBtn icon="star" color={colors.gold} onPress={() => swipe('super_like')} disabled={busy} label="Super like" small />
+            <RoundBtn icon="chatbubble-ellipses" color={colors.primary} onPress={() => openChatWith(current.id)} disabled={busy} label="Message" small />
+            <RoundBtn icon="star" color={colors.gold} onPress={superLike} disabled={busy} label="Super like" small />
             <RoundBtn icon="heart" color={colors.accent} onPress={() => swipe('like')} disabled={busy} label="Like" />
           </Row>
         </View>
@@ -145,10 +160,13 @@ export default function Discover() {
 }
 
 function RoundBtn({ icon, color, onPress, disabled, label, small }: { icon: keyof typeof Ionicons.glyphMap; color: string; onPress: () => void; disabled?: boolean; label: string; small?: boolean }) {
-  const s = small ? 56 : 72;
+  const s = small ? 56 : 68;
   return (
-    <Pressable accessibilityLabel={label} onPress={onPress} disabled={disabled} style={[{ width: s, height: s, borderRadius: s / 2, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.5 : 1 }, shadow.card]}>
-      <Ionicons name={icon} size={small ? 26 : 34} color={color} />
-    </Pressable>
+    <View style={{ alignItems: 'center', gap: 4 }}>
+      <Pressable accessibilityLabel={label} onPress={onPress} disabled={disabled} style={[{ width: s, height: s, borderRadius: s / 2, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.5 : 1, marginTop: small ? 6 : 0 }, shadow.card]}>
+        <Ionicons name={icon} size={small ? 26 : 32} color={color} />
+      </Pressable>
+      <Text style={font.small}>{label}</Text>
+    </View>
   );
 }

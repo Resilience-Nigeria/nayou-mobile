@@ -61,16 +61,28 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
 
 export function Field({ label, error, hint, ...rest }: TextInputProps & { label: string; error?: string; hint?: string }) {
   const [focus, setFocus] = useState(false);
+  const [shown, setShown] = useState(false);
+  const secret = !!rest.secureTextEntry;
   return (
     <View style={{ gap: 6 }}>
       <Text style={font.label}>{label}</Text>
-      <TextInput
-        placeholderTextColor="#A5ABA7"
-        {...rest}
-        onFocus={(e) => { setFocus(true); rest.onFocus?.(e); }}
-        onBlur={(e) => { setFocus(false); rest.onBlur?.(e); }}
-        style={[styles.input, { borderColor: error ? colors.danger : focus ? colors.primary : colors.border }, rest.multiline && { minHeight: 96, textAlignVertical: 'top' }]}
-      />
+      <View>
+        <TextInput
+          placeholderTextColor="#A5ABA7"
+          // Passwords are never auto-capitalised or autocorrected.
+          {...(secret ? { autoCapitalize: 'none' as const, autoCorrect: false, spellCheck: false } : {})}
+          {...rest}
+          secureTextEntry={secret && !shown}
+          onFocus={(e) => { setFocus(true); rest.onFocus?.(e); }}
+          onBlur={(e) => { setFocus(false); rest.onBlur?.(e); }}
+          style={[styles.input, { borderColor: error ? colors.danger : focus ? colors.primary : colors.border }, rest.multiline && { minHeight: 96, textAlignVertical: 'top' }, secret && { paddingRight: 48 }]}
+        />
+        {secret ? (
+          <Pressable accessibilityLabel={shown ? 'Hide password' : 'Show password'} hitSlop={10} onPress={() => setShown((v) => !v)} style={{ position: 'absolute', right: 14, top: 0, bottom: 0, justifyContent: 'center' }}>
+            <Ionicons name={shown ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.textMuted} />
+          </Pressable>
+        ) : null}
+      </View>
       {error ? <Text style={{ color: colors.danger, fontSize: 13 }}>{error}</Text> : hint ? <Text style={font.small}>{hint}</Text> : null}
     </View>
   );
@@ -88,11 +100,20 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
-export function Avatar({ url, name, size = 52 }: { url?: string | null; name?: string | null; size?: number }) {
-  if (url) return <Image source={{ uri: url }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.border }} contentFit="cover" />;
-  return (
+export function Avatar({ url, name, size = 52, online }: { url?: string | null; name?: string | null; size?: number; online?: boolean }) {
+  const face = url ? (
+    <Image source={{ uri: url }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.border }} contentFit="cover" />
+  ) : (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ color: colors.primaryDark, fontWeight: '700', fontSize: size / 2.6 }}>{(name ?? '?').slice(0, 1).toUpperCase()}</Text>
+    </View>
+  );
+  if (!online) return face;
+  const d = Math.max(10, Math.round(size * 0.26));
+  return (
+    <View>
+      {face}
+      <View style={{ position: 'absolute', right: 0, bottom: 0, width: d, height: d, borderRadius: d / 2, backgroundColor: '#22C55E', borderWidth: 2, borderColor: colors.white }} />
     </View>
   );
 }
@@ -141,13 +162,13 @@ export function Banner({ tone = 'info', children }: { tone?: 'info' | 'warn' | '
   return <View style={{ backgroundColor: bg, borderRadius: radius.md, padding: space.md }}>{typeof children === 'string' ? <Text style={font.body}>{children}</Text> : children}</View>;
 }
 
-export function ListRow({ title, subtitle, left, right, onPress }: { title: string; subtitle?: string; left?: ReactNode; right?: ReactNode; onPress?: () => void }) {
+export function ListRow({ title, subtitle, left, right, onPress, unread }: { title: string; subtitle?: string; left?: ReactNode; right?: ReactNode; onPress?: () => void; unread?: number }) {
   return (
     <Pressable onPress={onPress} disabled={!onPress} style={({ pressed }) => [styles.listRow, pressed && { opacity: 0.7 }]}>
       {left}
       <View style={{ flex: 1 }}>
         <Text style={font.h3}>{title}</Text>
-        {subtitle ? <Text style={[font.small, { marginTop: 2 }]} numberOfLines={2}>{subtitle}</Text> : null}
+        {subtitle ? <Text style={[font.small, { marginTop: 2 }, !!unread && { color: colors.text, fontWeight: '700' }]} numberOfLines={2}>{subtitle}</Text> : null}
       </View>
       {right ?? (onPress ? <Ionicons name="chevron-forward" size={18} color={colors.textMuted} /> : null)}
     </Pressable>

@@ -1,6 +1,6 @@
-# Omiara mobile app (Expo)
+# Nayou mobile app (Expo)
 
-Expo SDK 58, expo-router, TypeScript, TanStack Query. Talks to the Omiara Laravel API (JWT).
+Expo SDK 58, expo-router, TypeScript, TanStack Query. Talks to the Nayou Laravel API (JWT).
 
 ## Run
 ```bash
@@ -19,3 +19,9 @@ Run `eas init` once and put the project id in `app.json` → `extra.eas.projectI
 - Screens: welcome/login/register, appeal-a-suspension, Discover (swipe, match), Matches, Chat (report/block/unmatch), Alerts, Coins (buy, history, orders), Plans, Me (profile, photos, verification, preferences, location, notifications, appeals).
 - A `report` screen and `GET /states`, `GET /conversations/{id}/messages` are used: make sure the latest API overlay is applied.
 - Not tested on a device or simulator in the build sandbox; only `tsc --noEmit` has been run.
+
+## Photos
+Images are downscaled (long side 1600 px) and re-encoded to JPEG on the device before upload, so phone photos upload quickly even on mobile data. Tapping your picture on the Me tab uploads a replacement that becomes your main photo once a moderator approves it (your current one stays until then; this needs the `wants_primary` migration in the API overlay).
+
+## Branding
+Name, tagline and colours: `src/lib/brand.ts`, `src/theme/theme.ts`. Logo and icons: `assets/images/` (splash-icon, icon, android-icon-*, favicon). The splash and icons are native, so they show in a development build or installed app; Expo Go shows its own loading screen first, then the in-app Nayou splash.

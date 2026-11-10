@@ -1,12 +1,18 @@
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { Loading } from '../components/ui';
+import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
+import { BackButton } from '../components/BackButton';
+import { BrandSplash } from '../components/BrandSplash';
+import { IncomingCall } from '../components/IncomingCall';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { registerPush, routeForNotification } from '../lib/push';
 import { colors } from '../theme/theme';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const client = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 15_000, refetchOnWindowFocus: false } },
@@ -37,15 +43,22 @@ function PushBootstrap() {
 
 function Gate() {
   const { status } = useAuth();
-  if (status === 'loading') return <Loading />;
+  const [minShown, setMinShown] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setMinShown(true), 1200); return () => clearTimeout(t); }, []);
+  // Show the logo for at least a moment so it never just flashes, and until we know who is signed in.
+  if (status === 'loading' || !minShown) return <BrandSplash onReady={() => SplashScreen.hideAsync().catch(() => {})} />;
   const inApp = status === 'signedIn';
   return (
     <>
       <PushBootstrap />
-      <Stack screenOptions={{ headerStyle: { backgroundColor: colors.bg }, headerShadowVisible: false, headerTintColor: colors.text, contentStyle: { backgroundColor: colors.bg } }}>
+      {inApp ? <IncomingCall /> : null}
+      <Stack screenOptions={{ headerStyle: { backgroundColor: colors.bg }, headerShadowVisible: false, headerTintColor: colors.text, ...(Platform.OS === 'web' ? { headerLeft: () => <BackButton /> } : {}), contentStyle: { backgroundColor: colors.bg } }}>
         <Stack.Protected guard={inApp}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="chat/[id]" options={{ title: '' }} />
+          <Stack.Screen name="person/[id]" options={{ title: 'Profile' }} />
+          <Stack.Screen name="call/[id]" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="feed" options={{ title: 'Posts' }} />
           <Stack.Screen name="plans" options={{ title: 'Plans' }} />
           <Stack.Screen name="order/[id]" options={{ title: 'Your order' }} />
           <Stack.Screen name="profile-edit" options={{ title: 'Edit profile' }} />
