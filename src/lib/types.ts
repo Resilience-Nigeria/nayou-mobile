@@ -9,7 +9,7 @@ export type Card = {
 export type DiscoveryMeta = { sort: string; radius_km: number | null; has_more: boolean; next_cursor: string | null; expand_suggestion: { message?: string; radius?: string | number } | null };
 
 export type Profile = {
-  profile: { display_name: string; gender: string; bio: string | null; relationship_goal: string | null; is_discoverable: boolean; state_code: string | null; state: string | null; height_cm: number | null; personality_traits: string[]; show_online: boolean; show_current_location?: boolean };
+  profile: { username: string; display_name: string; gender: string; bio: string | null; relationship_goal: string | null; is_discoverable: boolean; state_code: string | null; state: string | null; height_cm: number | null; personality_traits: string[]; show_online: boolean; show_current_location?: boolean };
   photos: Photo[];
   verification: { selfie_verified: boolean; badge_label: string | null };
   preferences: { min_age: number | null; max_age: number | null; max_distance_km: number | null; interested_in: string[] } | null;
@@ -20,6 +20,7 @@ type Person = { id: string; display_name: string | null; photo: CardPhoto; verif
 export type ConversationItem = { id: string; matched: boolean; closed: boolean; user: Person; last_message: { body: string; mine: boolean; created_at: string } | null; activity_at: string; unread: number };
 export type ConversationInfo = { free_messages?: boolean; id: string; match_id: string | null; matched: boolean; closed: boolean; user: Person };
 export type PersonProfile = {
+  username: string;
   id: string; is_me: boolean; display_name: string | null; age: number | null; gender: string | null; bio: string | null;
   relationship_goal: string | null; height_cm: number | null; personality_traits: string[]; state: string | null; distance_label: string | null;
   online: boolean; last_active_at: string | null; verified: boolean;
@@ -29,7 +30,8 @@ export type PersonProfile = {
   you: { swipe: 'like' | 'pass' | 'super_like' | null; following: boolean; follows_you: boolean; mutual: boolean; liked: boolean };
 };
 export type MediaCard = { id: string; kind: 'image' | 'video'; mime: string; url: string | null; width: number | null; height: number | null };
-export type Post = { id: string; body: string; media: MediaCard | null; created_at: string; mine: boolean; author: { id: string; display_name: string | null; photo: CardPhoto } };
+export type PostComment = { id: string; body: string; created_at: string; mine: boolean; can_delete: boolean; author: { id: string; display_name: string | null; photo: CardPhoto } };
+export type Post = { id: string; body: string; media: MediaCard | null; like_count: number; comment_count: number; liked: boolean; created_at: string; mine: boolean; author: { id: string; display_name: string | null; photo: CardPhoto } };
 export type ChatStatus = { typing: boolean; other_read_at: string | null };
 export type LikeItem = { id: string; action: 'like' | 'super_like'; liked_at: string; matched: boolean; conversation_id: string | null; user: Person };
 export type Message = { id: string; client_message_id: string; sender_id: string; mine: boolean; body: string; message_type: string; media: MediaCard | null; created_at: string };
@@ -40,14 +42,15 @@ export type GiftRules = {
   enabled: boolean; balance: number; min_amount: number; max_amount: number; min_balance_after_gift: number; min_balance_to_gift: number;
   max_giftable: number; remaining_today: number | null; fee_percent: number; presets: number[];
 };
-export type WalletTx = { id: string; type: string; coins: number; balance: number; created_at: string };
+export type WalletTx = { id: string; type: string; coins: number; balance: number; created_at: string; with: { id: string; display_name: string | null } | null; detail: string | null };
+export type WalletSummary = { spent: number; received: number; spent_by_type: Record<string, number> };
 
 export type Package = { code: string; label: string | null; coins: number; price_minor: number; currency: string; price_display: string | null };
 export type PayMethod = { method: 'paystack' | 'manual_transfer'; instructions?: { bank_name: string; account_name: string; account_number: string; instructions?: string } };
 export type Order = {
   id: string; method: string; status: 'pending' | 'succeeded' | 'failed' | 'expired' | 'mismatch' | 'rejected'; reference: string;
   amount_minor: number; currency: string; coins: number; product: 'coins' | 'subscription'; plan_name: string | null;
-  checkout_url?: string | null; bank_transfer?: { bank_name: string; account_name: string; account_number: string; narration: string; instructions?: string };
+  checkout_url?: string | null; bank_transfer?: { bank_name: string; account_name: string; account_number: string; narration: string; username?: string; narration_text?: string; instructions?: string };
   failure_reason: string | null; expires_at: string | null;
 };
 
@@ -87,3 +90,6 @@ export type CallInfo = {
   user: { id: string; display_name: string | null; photo: CardPhoto; verified: boolean; online?: boolean };
   livekit?: { url: string; token: string };
 };
+
+export type ReferralSummary = { enabled: boolean; username: string; reward_coins: number; invitee_bonus_coins: number; total_invited: number; coins_earned: number; recent: { display_name: string | null; coins: number; created_at: string }[] };
+export type ProfileViews = { enabled: boolean; show_viewers: boolean; today: number; last_7_days: number; total: number; unique_people: number; viewers: { id: string; display_name: string | null; photo: CardPhoto; verified: boolean; viewed_at: string }[] };

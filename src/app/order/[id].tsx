@@ -5,6 +5,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Banner, Body, Button, Card, ErrorView, Field, H1, H2, Loading, Screen, money, showError } from '../../components/ui';
+import { appendFile } from '../../lib/upload';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import type { Order } from '../../lib/types';
@@ -50,7 +51,7 @@ export default function OrderScreen() {
       f.append('sender_name', sender.trim());
       if (bank.trim()) f.append('sender_bank', bank.trim());
       f.append('amount_minor', String(Math.round(Number(amount.replace(/,/g, '')) * 100)));
-      if (proof) f.append('proof', { uri: proof.uri, name: proof.fileName ?? 'proof.jpg', type: proof.mimeType ?? 'image/jpeg' } as any);
+      if (proof) await appendFile(f, 'proof', proof, 'proof.jpg');
       await api.upload(`/purchases/${o.id}/transfer-claim`, f);
       setSent(true);
       q.refetch();
@@ -84,7 +85,8 @@ export default function OrderScreen() {
             <Row2 k="Account name" v={o.bank_transfer.account_name} />
             <Row2 k="Account number" v={o.bank_transfer.account_number} />
             <Row2 k="Amount" v={money(o.amount_minor)} />
-            <Row2 k="Narration" v={o.bank_transfer.narration} />
+            <Row2 k="Narration" v={o.bank_transfer.narration_text ?? o.bank_transfer.narration} />
+            {o.bank_transfer.username ? <Banner tone="warn"><Text style={font.body}>Put your username <Text style={{ fontWeight: '800' }}>@{o.bank_transfer.username}</Text> in the transfer narration or description. We use it to find your payment and credit you.</Text></Banner> : null}
             {o.bank_transfer.instructions ? <Body muted>{o.bank_transfer.instructions}</Body> : null}
           </Card>
           {sent ? <Banner>Thanks. We will confirm your transfer shortly and you will get a notification.</Banner> : (
@@ -99,7 +101,7 @@ export default function OrderScreen() {
           )}
         </>
       ) : null}
-      <Button title="Done" variant="ghost" onPress={() => router.replace('/coins')} />
+      <Button title="Done" variant="ghost" onPress={() => router.replace('/wallet')} />
     </Screen>
   );
 }

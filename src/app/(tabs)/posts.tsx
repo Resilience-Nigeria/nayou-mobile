@@ -6,6 +6,7 @@ import { Alert, FlatList, useWindowDimensions, Pressable, Text, TextInput, View 
 import { Avatar, Button, Card, Empty, ErrorView, Loading, Row, Screen, showError, timeAgo } from '../../components/ui';
 import { ApiError, api } from '../../lib/api';
 import { MediaView } from '../../components/MediaView';
+import { PostCard } from '../../components/PostCard';
 import { mediaAllowed, pickAndUpload } from '../../lib/media';
 import { Chip } from '../../components/ui';
 import type { MediaCard, Post, PublicConfig } from '../../lib/types';
@@ -81,22 +82,7 @@ export default function Posts() {
           </View>
         }
         ListEmptyComponent={<Empty icon="newspaper-outline" title="Nothing here yet" text={scope === 'following' ? 'Follow people from their profile to see their posts here.' : 'Be the first to post.'} />}
-        renderItem={({ item }) => (
-          <Card style={{ gap: 8 }}>
-            <Pressable onPress={() => router.push({ pathname: '/person/[id]', params: { id: item.author.id } })}>
-              <Row style={{ gap: 10 }}>
-                <Avatar url={item.author.photo?.url} name={item.author.display_name} size={40} />
-                <View style={{ flex: 1 }}>
-                  <Text style={font.h3}>{item.mine ? 'You' : item.author.display_name}</Text>
-                  <Text style={font.small}>{timeAgo(item.created_at)} ago</Text>
-                </View>
-                {item.mine ? <Pressable onPress={() => remove(item.id)} hitSlop={10}><Text style={{ color: colors.textMuted }}>Delete</Text></Pressable> : null}
-              </Row>
-            </Pressable>
-            {item.body ? <Text style={[font.body, { lineHeight: 24 }]}>{item.body}</Text> : null}
-            {item.media ? <MediaView media={item.media} width={Math.min(width - space.lg * 4, 400)} /> : null}
-          </Card>
-        )}
+        renderItem={({ item }) => <PostCard post={item} config={cfg.data} onDelete={remove} />}
       />
     </Screen>
   );

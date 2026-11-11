@@ -16,7 +16,7 @@ export async function startCall(conversationId: string, type: 'audio' | 'video' 
     router.push({ pathname: '/call/[id]', params: { id: call.id } });
   } catch (e) {
     if (e instanceof ApiError && e.code === 'insufficient_coins') {
-      Alert.alert('Not enough coins', e.friendly, [{ text: 'Not now', style: 'cancel' }, { text: 'Buy coins', onPress: () => router.push('/coins') }]);
+      Alert.alert('Not enough coins', e.friendly, [{ text: 'Not now', style: 'cancel' }, { text: 'Buy coins', onPress: () => router.push('/wallet') }]);
     } else showError(e, 'Could not start the call');
   }
 }

@@ -61,6 +61,12 @@ function Gate() {
           <Stack.Screen name="call/[id]" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="feed" options={{ title: 'Posts' }} />
           <Stack.Screen name="plans" options={{ title: 'Plans' }} />
+          <Stack.Screen name="onboarding-photo" options={{ title: 'Your photo', headerBackVisible: false, headerLeft: () => null, gestureEnabled: false }} />
+          <Stack.Screen name="invite" options={{ title: 'Invite friends' }} />
+          <Stack.Screen name="viewers" options={{ title: 'Profile views' }} />
+          <Stack.Screen name="wallet" options={{ title: 'Coins' }} />
+          <Stack.Screen name="post/[id]" options={{ title: 'Comments' }} />
+          <Stack.Screen name="coin-history" options={{ title: 'Coin activity' }} />
           <Stack.Screen name="order/[id]" options={{ title: 'Your order' }} />
           <Stack.Screen name="profile-edit" options={{ title: 'Edit profile' }} />
           <Stack.Screen name="photos" options={{ title: 'Your photos' }} />

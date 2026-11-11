@@ -49,11 +49,17 @@ export default function Me() {
               {uploading ? <ActivityIndicator size="small" color={colors.white} /> : <Ionicons name="camera" size={13} color={colors.white} />}
             </View>
           </Pressable>
-          <Text style={[font.h2, { flex: 1 }]}>{p.profile.display_name}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={font.h2}>{p.profile.display_name}</Text>
+            <Text style={font.small}>@{p.profile.username}</Text>
+          </View>
           {p.verification.selfie_verified ? <VerifiedBadge /> : null}
         </Row>
         <Text style={[font.small, { marginTop: space.sm }]}>{me?.email}</Text>
       </Card>
+      <ListRow title="Invite friends" subtitle="Earn coins when someone joins with your username" onPress={go('/invite')} />
+      <ListRow title="Who viewed my profile" subtitle="See how many people looked at you" onPress={go('/viewers')} />
+      <ListRow title="My coins" subtitle="Balance, buy coins, where they went" onPress={go('/wallet')} />
       <ListRow title="Edit profile" subtitle="Name, about you, height, personality, what you're looking for" onPress={go('/profile-edit')} />
       <ListRow title="Posts" subtitle="Share updates with your followers and see who you follow" onPress={go('/feed')} />
       <ListRow title="See my public profile" subtitle="How others see you" onPress={() => router.push({ pathname: '/person/[id]', params: { id: me?.id ?? '' } })} />

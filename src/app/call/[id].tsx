@@ -4,7 +4,8 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { CallVideo } from '../../components/CallVideo';
-import { Avatar, Button } from '../../components/ui';
+import { Coin } from '../../components/Coin';
+import { Avatar, Button, Row } from '../../components/ui';
 import { api } from '../../lib/api';
 import { engine, type VideoTracks } from '../../lib/callEngine';
 import { durationLabel } from '../../lib/calls';
@@ -107,9 +108,9 @@ export default function CallScreen() {
         {live && tracks.remote ? null : <Avatar url={call?.user.photo?.url} name={call?.user.display_name} size={140} online={call?.user.online} />}
         <Text style={{ color: colors.white, fontSize: 28, fontWeight: '800' }}>{call?.user.display_name ?? ''}</Text>
         <Text style={{ color: colors.white, opacity: 0.85, fontSize: 18 }}>{status}</Text>
-        {call && call.price_per_minute > 0 && call.direction === 'outgoing' && !finished ? <Text style={{ color: colors.white, opacity: 0.7 }}>{call.price_per_second} coins per second</Text> : null}
+        {call && call.price_per_minute > 0 && call.direction === 'outgoing' && !finished ? <Row style={{ gap: 5, justifyContent: 'center' }}><Coin size={14} color="#FFD54A" /><Text style={{ color: colors.white, opacity: 0.7 }}>{call.price_per_second} per second</Text></Row> : null}
         {call && call.price_per_minute === 0 && !finished ? <Text style={{ color: colors.white, opacity: 0.7 }}>Free call</Text> : null}
-        {finished && call && call.coins_charged > 0 && call.direction === 'outgoing' ? <Text style={{ color: colors.white, opacity: 0.7 }}>{call.coins_charged} coins used</Text> : null}
+        {finished && call && call.coins_charged > 0 && call.direction === 'outgoing' ? <Row style={{ gap: 5, justifyContent: 'center' }}><Coin size={14} color="#FFD54A" /><Text style={{ color: colors.white, opacity: 0.7 }}>{call.coins_charged} used</Text></Row> : null}
         {error ? <Text style={{ color: '#FFD6DE', textAlign: 'center' }}>{error}</Text> : null}
       </View>
 

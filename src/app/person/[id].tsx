@@ -4,11 +4,12 @@ import { Image } from 'expo-image';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, FlatList, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { PostCard } from '../../components/PostCard';
 import { GiftModal } from '../../components/GiftModal';
 import { Button, Card, Chip, ErrorView, Loading, Row, VerifiedBadge, showError, timeAgo } from '../../components/ui';
 import { ApiError, api } from '../../lib/api';
 import { openChatWith } from '../../lib/openChat';
-import { cap, genderLabel, goalLabel, heightLabel, type PersonProfile, type Post } from '../../lib/types';
+import { cap, genderLabel, goalLabel, heightLabel, type PersonProfile, type Post, type PublicConfig } from '../../lib/types';
 import { colors, font, radius, shadow, space } from '../../theme/theme';
 
 function Stat({ value, label }: { value: number; label: string }) {
@@ -37,6 +38,7 @@ export default function Person() {
   const [busy, setBusy] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
   const q = useQuery({ queryKey: ['person', id], queryFn: () => api.get<PersonProfile>(`/users/${id}/profile`), retry: false, refetchInterval: 20_000 });
+  const cfg = useQuery({ queryKey: ['config'], queryFn: () => api.get<PublicConfig>('/config') });
   const posts = useInfiniteQuery({
     queryKey: ['posts', id],
     initialPageParam: undefined as string | undefined,
@@ -189,14 +191,12 @@ export default function Person() {
         {p.bio ? <View style={{ gap: 6 }}><Text style={font.label}>About</Text><Text style={[font.body, { lineHeight: 24 }]}>{p.bio}</Text></View> : null}
 
         <View style={{ gap: 8 }}>
-          <Text style={font.label}>Posts</Text>
+          <Text style={font.label}>Posts{postItems.length ? ` (${postItems.length}${posts.hasNextPage ? '+' : ''})` : ''}</Text>
           {locked ? (
             <Card><Text style={font.small}>Follow {p.display_name} to see their posts.</Text></Card>
           ) : postItems.length === 0 ? (
             <Text style={font.small}>No posts yet.</Text>
-          ) : postItems.map((x) => (
-            <Card key={x.id}><Text style={font.body}>{x.body}</Text><Text style={[font.small, { marginTop: 6 }]}>{timeAgo(x.created_at)} ago</Text></Card>
-          ))}
+          ) : postItems.map((x) => <PostCard key={x.id} post={x} config={cfg.data} />)}
           {!locked && posts.hasNextPage ? <Button title="Show more" variant="ghost" onPress={() => posts.fetchNextPage()} /> : null}
         </View>
 

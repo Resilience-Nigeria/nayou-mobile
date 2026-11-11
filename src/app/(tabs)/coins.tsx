@@ -18,7 +18,6 @@ const TX_LABELS: Record<string, string> = {
 export default function Coins() {
   const wallet = useQuery({ queryKey: ['wallet'], queryFn: () => api.get<Wallet>('/wallet') });
   const pk = useQuery({ queryKey: ['packages'], queryFn: () => api.get<{ packages: Package[]; methods: PayMethod[] }>('/packages') });
-  const tx = useQuery({ queryKey: ['wallet', 'tx'], queryFn: () => api.get<WalletTx[]>('/wallet/transactions') });
   const [busy, setBusy] = useState<string | null>(null);
 
   async function buy(p: Package, method: string) {
@@ -43,7 +42,7 @@ export default function Coins() {
   if (wallet.error || pk.error) return <ErrorView error={wallet.error ?? pk.error} onRetry={() => { wallet.refetch(); pk.refetch(); }} />;
 
   return (
-    <Screen scroll edges={[]} onRefresh={() => { wallet.refetch(); pk.refetch(); tx.refetch(); }} refreshing={wallet.isRefetching}>
+    <Screen scroll edges={[]} onRefresh={() => { wallet.refetch(); pk.refetch(); }} refreshing={wallet.isRefetching}>
       <Card style={{ backgroundColor: colors.primary, alignItems: 'center', gap: 4 }}>
         <Text style={{ color: colors.white, opacity: 0.85 }}>Your balance</Text>
         <Text style={{ color: colors.white, fontSize: 44, fontWeight: '800' }}>{wallet.data!.coin_balance}</Text>
@@ -63,10 +62,7 @@ export default function Coins() {
         </Card>
       ))}
       <Button title="See premium plans" variant="secondary" icon="ribbon" onPress={() => router.push('/plans')} />
-      <H2>History</H2>
-      {tx.data?.length ? tx.data.map((t) => (
-        <ListRow key={t.id} title={TX_LABELS[t.type] ?? t.type.replace(/_/g, ' ')} subtitle={`${timeAgo(t.created_at)} ago · balance ${t.balance}`} right={<Text style={[font.h3, { color: t.coins >= 0 ? colors.primary : colors.danger }]}>{t.coins > 0 ? '+' : ''}{t.coins}</Text>} />
-      )) : <Text style={font.small}>No activity yet.</Text>}
+      <Button title="See where my coins went" variant="secondary" icon="time" onPress={() => router.push('/coin-history')} />
     </Screen>
   );
 }

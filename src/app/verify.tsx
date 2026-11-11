@@ -10,21 +10,40 @@ export default function Verify() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['verification'], queryFn: () => api.get<VerificationStatus>('/verification/status') });
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [first, setFirst] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [result, setResult] = useState<{ status: string; message: string } | null>(null);
 
-  async function begin() {
+  async function shoot(cameraType = ImagePicker.CameraType.front) {
+    const r = await ImagePicker.launchCameraAsync({ cameraType, quality: 0.85, allowsEditing: false, mediaTypes: ['images'] });   // camera only: no gallery
+    return r.canceled ? null : r.assets[0];
+  }
+
+  // Step 1 takes the first photo (relaxed face); step 2 takes the pose photo and sends both.
+  async function firstPhoto() {
     setBusy(true);
     try {
-      const s = q.data?.session ?? (await api.post<{ session_id: string; instruction: string }>('/verification/selfie/session'));
+      if (!q.data?.session) await api.post('/verification/selfie/session');
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) { showError(new Error('Camera access is needed for the selfie.'), 'Camera off'); return; }
-      const r = await ImagePicker.launchCameraAsync({ cameraType: ImagePicker.CameraType.front, quality: 0.85, allowsEditing: false });
-      if (r.canceled) return;
-      const a = r.assets[0];
+      const a = await shoot();
+      if (a) setFirst(a);
+      await q.refetch();
+    } catch (e) { showError(e, 'Could not start verification'); } finally { setBusy(false); }
+  }
+
+  async function secondPhoto() {
+    const s = q.data?.session;
+    if (!s || !first) return;
+    setBusy(true);
+    try {
+      const second = await shoot();
+      if (!second) return;
       const f = new FormData();
-      await appendFile(f, 'selfie', a, 'selfie.jpg');
-      await api.upload(`/verification/selfie/${s.session_id}`, f);
-      setSent(true);
+      await appendFile(f, 'neutral', first, 'neutral.jpg');
+      await appendFile(f, 'selfie', second, 'selfie.jpg');
+      const res = await api.upload<{ status: string; message: string }>(`/verification/selfie/${s.session_id}`, f);
+      setResult(res);
+      setFirst(null);
       qc.invalidateQueries({ queryKey: ['verification'] });
       qc.invalidateQueries({ queryKey: ['profile'] });
     } catch (e) { showError(e, 'Could not submit your selfie'); } finally { setBusy(false); }
@@ -39,12 +58,16 @@ export default function Verify() {
       {!v.enabled ? <Banner>Verification isn't available right now.</Banner> : !v.selfie_verified ? (
         <>
           <H2>Prove it's you</H2>
-          <Body>You'll get a short instruction, like a pose. Take a selfie that matches it and we'll compare it with your profile photos.</Body>
+          <Body>You'll take two quick photos with your camera: one looking at the camera, then one doing a short instruction (like a smile). We check it's really you and match it to your profile photos. Photos from your gallery can't be used.</Body>
           {v.last_attempt?.status === 'rejected' || v.last_attempt?.status === 'failed' ? <Banner tone="warn">{v.last_attempt.failure_reason ?? 'Your last attempt didn\'t pass. Try again in good light.'}</Banner> : null}
-          {v.last_attempt?.status === 'pending' || sent ? <Banner>Your selfie is being reviewed. You'll get a notification.</Banner> : null}
-          {v.session ? <Banner><Body>{v.session.instruction}</Body></Banner> : null}
+          {result?.status === 'rejected' ? <Banner tone="warn">{result.message}</Banner> : null}
+          {result?.status === 'approved' ? <Banner>{result.message}</Banner> : null}
+          {v.last_attempt?.status === 'submitted' || result?.status === 'submitted' ? <Banner>Your selfie is being reviewed. You'll get a notification.</Banner> : null}
+          {first && v.session ? <Banner><Body>Photo 1 done. Now: {v.session.instruction}.</Body></Banner> : null}
           <Body muted>{v.attempts_left_today} attempts left today.</Body>
-          <Button title="Take selfie" icon="camera" onPress={begin} loading={busy} disabled={v.attempts_left_today < 1 || v.last_attempt?.status === 'pending'} />
+          {first
+            ? <Button title="Take photo 2" icon="camera" onPress={secondPhoto} loading={busy} />
+            : <Button title="Take photo 1" icon="camera" onPress={firstPhoto} loading={busy} disabled={v.attempts_left_today < 1 && !v.session || v.last_attempt?.status === 'submitted' || result?.status === 'submitted'} />}
         </>
       ) : null}
     </Screen>

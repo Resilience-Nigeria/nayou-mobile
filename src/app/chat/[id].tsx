@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, FlatList, Keyboard, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Keyboard, Platform, Pressable, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CoinAmount } from '../../components/Coin';
 import { MediaView } from '../../components/MediaView';
 import { mediaAllowed, pickAndUpload } from '../../lib/media';
 import { GiftModal } from '../../components/GiftModal';
@@ -43,6 +44,8 @@ export default function Chat() {
   const info = useQuery({ queryKey: ['conversation', id], queryFn: () => api.get<ConversationInfo>(`/conversations/${id}`), refetchInterval: 15_000 });
   const wallet = useQuery({ queryKey: ['wallet'], queryFn: () => api.get<Wallet>('/wallet') });
   const other = info.data;
+  const { width: screenW } = useWindowDimensions();
+  const titleMax = Math.max(120, screenW - 56 - 150);   // room for the back arrow and the three icons on the right
   const cfg = useQuery({ queryKey: ['config'], queryFn: () => api.get<PublicConfig>('/config') });
   const allow = mediaAllowed(cfg.data, 'message');
   const [attaching, setAttaching] = useState(false);
@@ -115,7 +118,7 @@ export default function Chat() {
       qc.invalidateQueries({ queryKey: ['conversations'] });
     } catch (e) {
       if (e instanceof ApiError && e.code === 'insufficient_coins') {
-        Alert.alert('Not enough coins', e.friendly, [{ text: 'Not now', style: 'cancel' }, { text: 'Buy coins', onPress: () => router.push('/coins') }]);
+        Alert.alert('Not enough coins', e.friendly, [{ text: 'Not now', style: 'cancel' }, { text: 'Buy coins', onPress: () => router.push('/wallet') }]);
       } else if (e instanceof ApiError && ['messaging_restricted', 'conversation_closed', 'awaiting_reply', 'direct_messages_disabled', 'media_not_allowed', 'media_disabled'].includes(e.code)) {
         setNotice(e.friendly);
       } else showError(e, 'Could not send');
@@ -139,7 +142,7 @@ export default function Chat() {
       qc.invalidateQueries({ queryKey: ['conversations'] });
     } catch (e) {
       if (e instanceof ApiError && e.code === 'insufficient_coins') {
-        Alert.alert('Not enough coins', e.friendly, [{ text: 'Not now', style: 'cancel' }, { text: 'Buy coins', onPress: () => router.push('/coins') }]);
+        Alert.alert('Not enough coins', e.friendly, [{ text: 'Not now', style: 'cancel' }, { text: 'Buy coins', onPress: () => router.push('/wallet') }]);
       } else if (e instanceof ApiError && ['contact_info_blocked', 'messaging_restricted', 'conversation_closed', 'awaiting_reply', 'direct_messages_disabled'].includes(e.code)) {
         setNotice(e.friendly);
       } else {
@@ -179,16 +182,16 @@ export default function Chat() {
       {other ? <GiftModal visible={giftOpen} onClose={() => setGiftOpen(false)} recipientId={other.user.id} name={other.user.display_name} /> : null}
       <Stack.Screen options={{
         headerTitle: () => other ? (
-          <Pressable onPress={() => router.push({ pathname: '/person/[id]', params: { id: other.user.id } })} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Pressable onPress={() => router.push({ pathname: '/person/[id]', params: { id: other.user.id } })} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: titleMax }}>
             <Avatar url={other.user.photo?.url} name={other.user.display_name} size={36} online={other.user.online} />
-            <View>
-              <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>{other.user.display_name ?? 'Member'}</Text>
-              <Text style={{ fontSize: 12, color: typing || other.user.online ? colors.primary : colors.textMuted }}>{typing ? 'typing…' : other.user.online ? 'Online' : 'Tap to view profile'}</Text>
+            <View style={{ flexShrink: 1 }}>
+              <Text numberOfLines={1} ellipsizeMode="tail" style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>{other.user.display_name ?? 'Member'}</Text>
+              <Text numberOfLines={1} style={{ fontSize: 12, color: typing || other.user.online ? colors.primary : colors.textMuted }}>{typing ? 'typing…' : other.user.online ? 'Online' : 'Tap to view profile'}</Text>
             </View>
           </Pressable>
         ) : null,
         headerRight: () => other ? (
-          <Row style={{ gap: 18 }}>
+          <Row style={{ gap: 16 }}>
             {!other.closed ? <Pressable onPress={() => startCall(String(id), 'video')} hitSlop={10} accessibilityLabel="Video call"><Ionicons name="videocam-outline" size={25} color={colors.primary} /></Pressable> : null}
             {!other.closed ? <Pressable onPress={() => startCall(String(id))} hitSlop={10} accessibilityLabel="Voice call"><Ionicons name="call-outline" size={23} color={colors.primary} /></Pressable> : null}
             <Pressable onPress={menu} hitSlop={10}><Ionicons name="ellipsis-horizontal" size={22} color={colors.text} /></Pressable>
@@ -243,7 +246,9 @@ export default function Chat() {
             <Ionicons name="send" size={20} color={colors.white} />
           </Pressable>
         </Row>
-        <Text style={[font.small, { textAlign: 'center', paddingBottom: 4 }]}>{other?.free_messages ? 'Free messaging: you follow each other' : wallet.data ? `${wallet.data.coin_balance} coins · ${wallet.data.message_cost} per message` : ' '}</Text>
+        <Row style={{ justifyContent: 'center', gap: 6, paddingBottom: 4 }}>
+          {other?.free_messages ? <Text style={font.small}>Free messaging: you follow each other</Text> : wallet.data ? (<><CoinAmount value={wallet.data.coin_balance} size={13} style={{ fontWeight: '600' }} /><Text style={font.small}>· {wallet.data.message_cost} per message</Text></>) : <Text style={font.small}> </Text>}
+        </Row>
       </View>
     </SafeAreaView>
   );

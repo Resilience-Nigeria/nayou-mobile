@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { DateField } from '../../components/DateField';
 import { Banner, Body, Button, Chip, Field, H1, Row, Screen, showError } from '../../components/ui';
@@ -14,11 +14,24 @@ export default function Register() {
   const config = useQuery({ queryKey: ['config'], queryFn: () => api.get<PublicConfig>('/config') });
   const states = useQuery({ queryKey: ['states'], queryFn: () => api.get<StateItem[]>('/states') });
 
-  const [f, setF] = useState({ display_name: '', email: '', password: '', phone: '', date_of_birth: '', gender: '', state_code: '' });
+  const [f, setF] = useState({ display_name: '', username: '', referral_username: '', email: '', password: '', phone: '', date_of_birth: '', gender: '', state_code: '' });
   const [terms, setTerms] = useState(false);
   const [pickState, setPickState] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<Record<string, string[]>>({});
+  const [uname, setUname] = useState<{ checking: boolean; ok?: boolean; reason?: string | null }>({ checking: false });
+  useEffect(() => {
+    const u = f.username.trim().toLowerCase();
+    if (u.length < 3) { setUname({ checking: false }); return; }
+    setUname({ checking: true });
+    const t = setTimeout(async () => {
+      try {
+        const r = await api.get<{ available: boolean; reason: string | null }>('/auth/username-available', { username: u });
+        setUname({ checking: false, ok: r.available, reason: r.reason });
+      } catch { setUname({ checking: false }); }
+    }, 450);
+    return () => clearTimeout(t);
+  }, [f.username]);
   const set = (k: keyof typeof f) => (v: string) => setF((p) => ({ ...p, [k]: v }));
 
   const minAge = Number(config.data?.['auth.min_age'] ?? 18);
@@ -31,7 +44,7 @@ export default function Register() {
     setErr({});
     try {
       await signUp({
-        ...f, email: f.email.trim(), phone: f.phone || null, state_code: f.state_code || null,
+        ...f, username: f.username.trim().toLowerCase(), referral_username: f.referral_username.trim().replace(/^@/, '').toLowerCase() || null, email: f.email.trim(), phone: f.phone || null, state_code: f.state_code || null,
         accepted_terms: terms, accepted_privacy: terms,
       });
     } catch (e) {
@@ -49,9 +62,13 @@ export default function Register() {
       <H1>Create your account</H1>
       {bonus > 0 ? <Banner tone="info">{`You'll get ${bonus} free coins to start chatting.`}</Banner> : null}
       <Field label="First name or nickname" value={f.display_name} onChangeText={set('display_name')} error={err.display_name?.[0]} hint="No phone numbers or social handles in your name." />
+      <Field label="Username" value={f.username} onChangeText={(v) => set('username')(v.replace(/[^a-zA-Z0-9_]/g, ''))} autoCapitalize="none" autoCorrect={false} maxLength={30}
+        error={err.username?.[0] ?? (uname.ok === false ? uname.reason ?? undefined : undefined)}
+        hint={uname.checking ? 'Checking…' : uname.ok ? '✓ Available' : 'Your unique @name. Friends use it to invite you, and you put it in bank transfers.'} />
       <Field label="Email" value={f.email} onChangeText={set('email')} autoCapitalize="none" keyboardType="email-address" error={err.email?.[0]} />
       <Field label="Password" value={f.password} onChangeText={set('password')} secureTextEntry error={err.password?.[0]} hint={`At least ${minPw} characters.`} />
       <Field label="Phone (optional)" value={f.phone} onChangeText={set('phone')} keyboardType="phone-pad" error={err.phone?.[0]} hint="Never shown to anyone." />
+      <Field label="Invited by? Their username (optional)" value={f.referral_username} onChangeText={set('referral_username')} autoCapitalize="none" autoCorrect={false} error={err.referral_username?.[0]} hint="They earn coins when you join with their username." />
       <DateField label="Date of birth" value={f.date_of_birth} onChange={set('date_of_birth')} maxDate={latestBirth} error={err.date_of_birth?.[0]} hint={`You must be at least ${minAge}.`} />
 
       <View style={{ gap: 6 }}>
