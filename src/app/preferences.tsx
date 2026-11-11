@@ -34,7 +34,7 @@ export default function Preferences() {
   async function save() {
     setBusy(true); setErr({});
     try {
-      await api.put('/profile/preferences', { min_age: min ? Number(min) : null, max_age: max ? Number(max) : null, max_distance_km: dist, interested_in: who });
+      await api.put('/profile/preferences', { min_age: min ? Number(min) : null, max_age: max ? Number(max) : null, max_distance_km: dist });
       await qc.invalidateQueries({ queryKey: ['profile'] });
       qc.invalidateQueries({ queryKey: ['discover'] });
       router.back();
@@ -45,8 +45,7 @@ export default function Preferences() {
 
   return (
     <Screen scroll>
-      <Text style={font.label}>Show me</Text>
-      <Row style={{ flexWrap: 'wrap', gap: space.sm }}>{GENDERS.map(([k, l]) => <Chip key={k} label={l} selected={who.includes(k)} onPress={() => toggle(k)} />)}</Row>
+      <Text style={font.small}>You always see the opposite gender to yours. It updates automatically if you change your gender in Edit profile.</Text>
       <Row>
         <Field label="Youngest" value={min} onChangeText={setMin} keyboardType="number-pad" maxLength={2} error={err.min_age?.[0]} />
         <Field label="Oldest" value={max} onChangeText={setMax} keyboardType="number-pad" maxLength={2} error={err.max_age?.[0]} />

@@ -29,8 +29,9 @@ export async function shrink(asset: Picked): Promise<Picked> {
  * The old `{uri, name, type}` shortcut works in neither with Expo's fetch.
  */
 export async function appendFile(form: FormData, field: string, picked: Picked, fallbackName: string): Promise<void> {
-  const asset = await shrink(picked);
-  const type = asset.mimeType ?? 'image/jpeg';
+  const isVideo = !!picked.mimeType?.startsWith('video');
+  const asset = isVideo ? picked : await shrink(picked);   // videos are sent as they are
+  const type = asset.mimeType ?? (isVideo ? 'video/mp4' : 'image/jpeg');
   const name = asset.fileName ?? fallbackName;
   if (Platform.OS === 'web') {
     const blob = await (await fetch(asset.uri)).blob();

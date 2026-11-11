@@ -55,7 +55,7 @@ export function IncomingCall() {
         <View style={{ alignItems: 'center', gap: space.md }}>
           <Avatar url={call?.user.photo?.url} name={call?.user.display_name} size={140} online={call?.user.online} />
           <Text style={{ color: colors.white, fontSize: 28, fontWeight: '800' }}>{call?.user.display_name}</Text>
-          <Text style={{ color: colors.white, opacity: 0.85, fontSize: 18 }}>Incoming voice call</Text>
+          <Text style={{ color: colors.white, opacity: 0.85, fontSize: 18 }}>{call?.type === 'video' ? 'Incoming video call' : 'Incoming voice call'}</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 70 }}>
           <View style={{ alignItems: 'center', gap: 6 }}>
@@ -66,7 +66,7 @@ export function IncomingCall() {
           </View>
           <View style={{ alignItems: 'center', gap: 6 }}>
             <Pressable onPress={answer} accessibilityLabel="Accept" style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#22C55E', alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.6 : 1 }}>
-              <Ionicons name="call" size={32} color={colors.white} />
+              <Ionicons name={call?.type === 'video' ? 'videocam' : 'call'} size={32} color={colors.white} />
             </Pressable>
             <Text style={{ color: colors.white }}>Accept</Text>
           </View>

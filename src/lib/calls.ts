@@ -5,14 +5,14 @@ import { ApiError, api } from './api';
 import { engine } from './callEngine';
 import type { CallInfo } from './types';
 
-/** Ring someone from a conversation and open the call screen. */
-export async function startCall(conversationId: string): Promise<void> {
+/** Ring someone (voice or video) from a conversation and open the call screen. */
+export async function startCall(conversationId: string, type: 'audio' | 'video' = 'audio'): Promise<void> {
   if (!engine.available) {
-    Alert.alert('Calls not available here', engine.unavailableReason ?? 'Voice calls are not available on this device.');
+    Alert.alert('Calls not available here', engine.unavailableReason ?? 'Calls are not available on this device.');
     return;
   }
   try {
-    const call = await api.post<CallInfo>('/calls', { conversation_id: conversationId });
+    const call = await api.post<CallInfo>('/calls', { conversation_id: conversationId, type });
     router.push({ pathname: '/call/[id]', params: { id: call.id } });
   } catch (e) {
     if (e instanceof ApiError && e.code === 'insufficient_coins') {

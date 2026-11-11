@@ -19,6 +19,9 @@ export default function TabsLayout() {
     queryFn: () => api.get<{ unread: number; chats: number }>('/conversations/unread-count'),
     refetchInterval: 5_000,
   });
+  const cfg = useQuery({ queryKey: ['config'], queryFn: () => api.get<Record<string, unknown>>('/config'), staleTime: 60_000 });
+  const exploreOn = cfg.data?.['explore.enabled'] !== false;
+  const postsOn = cfg.data?.['posts.enabled'] !== false;
   const n = unread.data?.unread ?? 0;
   const c = chats.data?.chats ?? 0; // conversations waiting for you
   return (
@@ -27,10 +30,12 @@ export default function TabsLayout() {
       tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border },
       headerStyle: { backgroundColor: colors.bg }, headerShadowVisible: false, headerTitleStyle: { fontWeight: '800' },
     }}>
-      <Tabs.Screen name="index" options={{ title: 'Discover', tabBarIcon: icon('compass-outline', 'compass') }} />
+      <Tabs.Screen name="home" options={{ title: 'Home', tabBarIcon: icon('home-outline', 'home'), href: exploreOn ? undefined : null }} />
+      <Tabs.Screen name="index" options={{ title: 'Nearby', tabBarIcon: icon('compass-outline', 'compass') }} />
+      <Tabs.Screen name="posts" options={{ title: 'Posts', tabBarIcon: icon('newspaper-outline', 'newspaper'), href: postsOn ? undefined : null }} />
       <Tabs.Screen name="matches" options={{ title: 'Chats', tabBarIcon: icon('chatbubbles-outline', 'chatbubbles'), tabBarBadge: c > 0 ? (c > 99 ? '99+' : c) : undefined }} />
       <Tabs.Screen name="alerts" options={{ title: 'Alerts', tabBarIcon: icon('notifications-outline', 'notifications'), tabBarBadge: n > 0 ? (n > 99 ? '99+' : n) : undefined }} />
-      <Tabs.Screen name="coins" options={{ title: 'Coins', tabBarIcon: icon('wallet-outline', 'wallet') }} />
+      <Tabs.Screen name="coins" options={{ title: 'Coins', href: null }} />
       <Tabs.Screen name="me" options={{ title: 'Me', tabBarIcon: icon('person-outline', 'person') }} />
     </Tabs>
   );

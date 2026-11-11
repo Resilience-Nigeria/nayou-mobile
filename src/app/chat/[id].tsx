@@ -4,10 +4,13 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, Keyboard, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MediaView } from '../../components/MediaView';
+import { mediaAllowed, pickAndUpload } from '../../lib/media';
+import { GiftModal } from '../../components/GiftModal';
 import { Avatar, Banner, ErrorView, Loading, Row, showError } from '../../components/ui';
 import { ApiError, api } from '../../lib/api';
 import { startCall } from '../../lib/calls';
-import type { ChatStatus, ConversationInfo, Message, Wallet } from '../../lib/types';
+import type { ChatStatus, ConversationInfo, Message, PublicConfig, Wallet } from '../../lib/types';
 import { colors, font, radius, space } from '../../theme/theme';
 
 function TypingDots() {
@@ -40,6 +43,9 @@ export default function Chat() {
   const info = useQuery({ queryKey: ['conversation', id], queryFn: () => api.get<ConversationInfo>(`/conversations/${id}`), refetchInterval: 15_000 });
   const wallet = useQuery({ queryKey: ['wallet'], queryFn: () => api.get<Wallet>('/wallet') });
   const other = info.data;
+  const cfg = useQuery({ queryKey: ['config'], queryFn: () => api.get<PublicConfig>('/config') });
+  const allow = mediaAllowed(cfg.data, 'message');
+  const [attaching, setAttaching] = useState(false);
 
   const msgs = useInfiniteQuery({
     queryKey: ['messages', id],
@@ -63,6 +69,7 @@ export default function Chat() {
   const insets = useSafeAreaInsets();
   const [kb, setKb] = useState(0);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [giftOpen, setGiftOpen] = useState(false);
   useEffect(() => {
     if (Platform.OS === 'web') return;
     const ios = Platform.OS === 'ios';
@@ -95,6 +102,26 @@ export default function Chat() {
     }
   }, [id, newestId, newestIsTheirs, msgs.isLoading]);
 
+  async function attach() {
+    if (attaching || sending) return;
+    setAttaching(true);
+    setNotice(null);
+    try {
+      const m = await pickAndUpload('message', allow);
+      if (!m) return;
+      await api.post(`/conversations/${id}/messages`, { client_message_id: uuid(), media_id: m.id });
+      qc.invalidateQueries({ queryKey: ['messages', id] });
+      qc.invalidateQueries({ queryKey: ['wallet'] });
+      qc.invalidateQueries({ queryKey: ['conversations'] });
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'insufficient_coins') {
+        Alert.alert('Not enough coins', e.friendly, [{ text: 'Not now', style: 'cancel' }, { text: 'Buy coins', onPress: () => router.push('/coins') }]);
+      } else if (e instanceof ApiError && ['messaging_restricted', 'conversation_closed', 'awaiting_reply', 'direct_messages_disabled', 'media_not_allowed', 'media_disabled'].includes(e.code)) {
+        setNotice(e.friendly);
+      } else showError(e, 'Could not send');
+    } finally { setAttaching(false); }
+  }
+
   async function send() {
     const body = text.trim();
     if (!body || sending) return;
@@ -126,6 +153,7 @@ export default function Chat() {
   function menu() {
     if (!other) return;
     Alert.alert(other.user.display_name ?? 'Options', undefined, [
+      { text: 'Gift coins', onPress: () => setGiftOpen(true) },
       { text: 'Report', onPress: () => router.push({ pathname: '/report', params: { id: other.user.id, name: other.user.display_name ?? '' } }) },
       {
         text: 'Block', style: 'destructive',
@@ -148,6 +176,7 @@ export default function Chat() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['bottom']}>
+      {other ? <GiftModal visible={giftOpen} onClose={() => setGiftOpen(false)} recipientId={other.user.id} name={other.user.display_name} /> : null}
       <Stack.Screen options={{
         headerTitle: () => other ? (
           <Pressable onPress={() => router.push({ pathname: '/person/[id]', params: { id: other.user.id } })} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -160,6 +189,7 @@ export default function Chat() {
         ) : null,
         headerRight: () => other ? (
           <Row style={{ gap: 18 }}>
+            {!other.closed ? <Pressable onPress={() => startCall(String(id), 'video')} hitSlop={10} accessibilityLabel="Video call"><Ionicons name="videocam-outline" size={25} color={colors.primary} /></Pressable> : null}
             {!other.closed ? <Pressable onPress={() => startCall(String(id))} hitSlop={10} accessibilityLabel="Voice call"><Ionicons name="call-outline" size={23} color={colors.primary} /></Pressable> : null}
             <Pressable onPress={menu} hitSlop={10}><Ionicons name="ellipsis-horizontal" size={22} color={colors.text} /></Pressable>
           </Row>
@@ -175,7 +205,8 @@ export default function Chat() {
           ListEmptyComponent={<Text style={[font.small, { textAlign: 'center', transform: [{ scaleY: -1 }], padding: space.xl }]}>Say hello! You don't need to match first. Each message costs {wallet.data?.message_cost ?? '…'} coin(s), paid by the sender, unless you follow each other.</Text>}
           renderItem={({ item }) => (
             <View style={{ alignSelf: item.mine ? 'flex-end' : 'flex-start', maxWidth: '80%', backgroundColor: item.mine ? colors.primary : colors.card, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 10 }}>
-              <Text style={{ color: item.mine ? colors.white : colors.text, fontSize: 16, lineHeight: 22 }}>{item.body}</Text>
+              {item.media ? <MediaView media={item.media} width={220} /> : null}
+              {item.body ? <Text style={{ color: item.mine ? colors.white : colors.text, fontSize: 16, lineHeight: 22, marginTop: item.media ? 6 : 0 }}>{item.body}</Text> : null}
             </View>
           )}
         />
@@ -193,6 +224,11 @@ export default function Chat() {
           <Pressable onPress={() => { Keyboard.dismiss(); setEmojiOpen((v) => !v); }} hitSlop={8} style={{ width: 44, height: 48, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name={emojiOpen ? 'keypad-outline' : 'happy-outline'} size={26} color={colors.primary} />
           </Pressable>
+          {allow.images || allow.videos ? (
+            <Pressable onPress={attach} disabled={attaching} hitSlop={8} style={{ width: 40, height: 48, alignItems: 'center', justifyContent: 'center', opacity: attaching ? 0.4 : 1 }}>
+              <Ionicons name="attach" size={26} color={colors.primary} />
+            </Pressable>
+          ) : null}
           <TextInput
             onFocus={() => setEmojiOpen(false)}
             value={text}

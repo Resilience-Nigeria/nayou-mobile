@@ -11,6 +11,7 @@ import { IncomingCall } from '../components/IncomingCall';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { registerPush, routeForNotification } from '../lib/push';
 import { colors } from '../theme/theme';
+import '../lib/webAlert';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 

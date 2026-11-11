@@ -10,7 +10,7 @@ const pretty = (r: string) => r.replace(/_/g, ' ').replace(/^./, (c) => c.toUppe
 
 export default function Report() {
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
-  const reasons = useQuery({ queryKey: ['report-reasons'], queryFn: () => api.get<string[]>('/reports/reasons') });
+  const reasons = useQuery({ queryKey: ['report-reasons', id], queryFn: () => api.get<string[]>('/reports/reasons', { user_id: id }) });
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
   const [busy, setBusy] = useState(false);

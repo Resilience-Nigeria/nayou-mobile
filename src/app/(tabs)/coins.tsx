@@ -11,6 +11,10 @@ import { colors, font, space } from '../../theme/theme';
 const key = () => 'omi-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 const METHOD_LABEL: Record<string, string> = { paystack: 'Card / bank / USSD (Paystack)', manual_transfer: 'Bank transfer' };
 
+const TX_LABELS: Record<string, string> = {
+  gift_sent: 'Gift sent', gift_received: 'Gift received', message_debit: 'Message', call_debit: 'Call', signup_bonus: 'Welcome bonus', admin_credit: 'Credited by Nayou', call_refund: 'Call refund',
+};
+
 export default function Coins() {
   const wallet = useQuery({ queryKey: ['wallet'], queryFn: () => api.get<Wallet>('/wallet') });
   const pk = useQuery({ queryKey: ['packages'], queryFn: () => api.get<{ packages: Package[]; methods: PayMethod[] }>('/packages') });
@@ -61,7 +65,7 @@ export default function Coins() {
       <Button title="See premium plans" variant="secondary" icon="ribbon" onPress={() => router.push('/plans')} />
       <H2>History</H2>
       {tx.data?.length ? tx.data.map((t) => (
-        <ListRow key={t.id} title={t.type.replace(/_/g, ' ')} subtitle={`${timeAgo(t.created_at)} ago · balance ${t.balance}`} right={<Text style={[font.h3, { color: t.coins >= 0 ? colors.primary : colors.danger }]}>{t.coins > 0 ? '+' : ''}{t.coins}</Text>} />
+        <ListRow key={t.id} title={TX_LABELS[t.type] ?? t.type.replace(/_/g, ' ')} subtitle={`${timeAgo(t.created_at)} ago · balance ${t.balance}`} right={<Text style={[font.h3, { color: t.coins >= 0 ? colors.primary : colors.danger }]}>{t.coins > 0 ? '+' : ''}{t.coins}</Text>} />
       )) : <Text style={font.small}>No activity yet.</Text>}
     </Screen>
   );

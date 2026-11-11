@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { DateField } from '../../components/DateField';
 import { Banner, Body, Button, Chip, Field, H1, Row, Screen, showError } from '../../components/ui';
 import { ApiError, api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
@@ -22,6 +23,7 @@ export default function Register() {
 
   const minAge = Number(config.data?.['auth.min_age'] ?? 18);
   const bonus = Number(config.data?.['coins.welcome_bonus'] ?? 0);
+  const latestBirth = new Date(new Date().getFullYear() - minAge, new Date().getMonth(), new Date().getDate()); // youngest allowed
   const minPw = Number(config.data?.['auth.password_min_length'] ?? 8);
 
   async function submit() {
@@ -50,7 +52,7 @@ export default function Register() {
       <Field label="Email" value={f.email} onChangeText={set('email')} autoCapitalize="none" keyboardType="email-address" error={err.email?.[0]} />
       <Field label="Password" value={f.password} onChangeText={set('password')} secureTextEntry error={err.password?.[0]} hint={`At least ${minPw} characters.`} />
       <Field label="Phone (optional)" value={f.phone} onChangeText={set('phone')} keyboardType="phone-pad" error={err.phone?.[0]} hint="Never shown to anyone." />
-      <Field label="Date of birth" value={f.date_of_birth} onChangeText={set('date_of_birth')} placeholder="YYYY-MM-DD" keyboardType="numbers-and-punctuation" maxLength={10} error={err.date_of_birth?.[0]} hint={`You must be at least ${minAge}.`} />
+      <DateField label="Date of birth" value={f.date_of_birth} onChange={set('date_of_birth')} maxDate={latestBirth} error={err.date_of_birth?.[0]} hint={`You must be at least ${minAge}.`} />
 
       <View style={{ gap: 6 }}>
         <Text style={font.label}>I am a</Text>

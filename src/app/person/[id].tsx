@@ -3,12 +3,13 @@ import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-quer
 import { Image } from 'expo-image';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, FlatList, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { GiftModal } from '../../components/GiftModal';
 import { Button, Card, Chip, ErrorView, Loading, Row, VerifiedBadge, showError, timeAgo } from '../../components/ui';
-import { api } from '../../lib/api';
+import { ApiError, api } from '../../lib/api';
 import { openChatWith } from '../../lib/openChat';
 import { cap, genderLabel, goalLabel, heightLabel, type PersonProfile, type Post } from '../../lib/types';
-import { colors, font, radius, space } from '../../theme/theme';
+import { colors, font, radius, shadow, space } from '../../theme/theme';
 
 function Stat({ value, label }: { value: number; label: string }) {
   return (
@@ -34,6 +35,7 @@ export default function Person() {
   const qc = useQueryClient();
   const [page, setPage] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [giftOpen, setGiftOpen] = useState(false);
   const q = useQuery({ queryKey: ['person', id], queryFn: () => api.get<PersonProfile>(`/users/${id}/profile`), retry: false, refetchInterval: 20_000 });
   const posts = useInfiniteQuery({
     queryKey: ['posts', id],
@@ -58,6 +60,38 @@ export default function Person() {
       qc.invalidateQueries({ queryKey: ['feed'] });
       qc.invalidateQueries({ queryKey: ['conversation'] });
     } catch (e) { showError(e); } finally { setBusy(false); }
+  }
+
+  async function swipe(action: 'like' | 'pass' | 'super_like') {
+    setBusy(true);
+    try {
+      const r = await api.post<{ matched: boolean; match: { conversation_id: string } | null }>('/swipes', { target_user_id: p.id, action });
+      qc.invalidateQueries({ queryKey: ['discover'] });
+      qc.invalidateQueries({ queryKey: ['likes'] });
+      if (r.matched) {
+        qc.invalidateQueries({ queryKey: ['matches'] });
+        qc.invalidateQueries({ queryKey: ['conversations'] });
+        Alert.alert("It's a match!", `You and ${p.display_name} liked each other.`, [
+          { text: 'Later', onPress: () => q.refetch() },
+          { text: 'Say hello', onPress: () => router.replace({ pathname: '/chat/[id]', params: { id: r.match!.conversation_id } }) },
+        ]);
+      } else if (action === 'pass') {
+        router.back();
+      } else {
+        await q.refetch();
+      }
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'daily_limit_reached') {
+        Alert.alert('Daily limit reached', e.friendly, [{ text: 'Not now', style: 'cancel' }, { text: 'See plans', onPress: () => router.push('/plans') }]);
+      } else showError(e, 'Could not record that');
+    } finally { setBusy(false); }
+  }
+
+  function superLike() {
+    Alert.alert(`Super like ${p.display_name}?`, 'A Super like tells them you are really interested. It counts as a like, and you get a limited number each day.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Super like', onPress: () => swipe('super_like') },
+    ]);
   }
 
   const presence = p.online ? 'Online now' : p.last_active_at ? `Active ${timeAgo(p.last_active_at)} ago` : null;
@@ -107,12 +141,34 @@ export default function Person() {
           </Row>
         </Card>
 
+        {!p.is_me && !p.you.swipe ? (
+          <Card>
+            <Row style={{ justifyContent: 'space-around', alignItems: 'flex-start' }}>
+              {[
+                { icon: 'close', color: colors.textMuted, label: 'Pass', onPress: () => swipe('pass') },
+                { icon: 'star', color: colors.gold, label: 'Super like', onPress: superLike },
+                { icon: 'heart', color: colors.accent, label: 'Like', onPress: () => swipe('like') },
+              ].map((b) => (
+                <View key={b.label} style={{ alignItems: 'center', gap: 4 }}>
+                  <Pressable accessibilityLabel={b.label} onPress={b.onPress} disabled={busy} style={[{ width: 60, height: 60, borderRadius: 30, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.5 : 1 }, shadow.card]}>
+                    <Ionicons name={b.icon as any} size={28} color={b.color} />
+                  </Pressable>
+                  <Text style={font.small}>{b.label}</Text>
+                </View>
+              ))}
+            </Row>
+          </Card>
+        ) : null}
+        {!p.is_me && p.you.swipe && p.you.swipe !== 'pass' ? <Text style={[font.small, { color: colors.accent }]}>{p.you.swipe === 'super_like' ? '★ You super liked this person' : '♥ You liked this person'}</Text> : null}
+
         {!p.is_me ? (
           <Row style={{ gap: space.sm }}>
             <Button title={p.you.following ? 'Following' : p.you.follows_you ? 'Follow back' : 'Follow'} variant={p.you.following ? 'secondary' : 'primary'} onPress={toggleFollow} loading={busy} style={{ flex: 1 }} />
             <Button title="Message" variant="secondary" onPress={() => openChatWith(p.id)} style={{ flex: 1 }} />
           </Row>
         ) : null}
+        {!p.is_me ? <Button title="Gift coins" variant="secondary" icon="gift-outline" onPress={() => setGiftOpen(true)} /> : null}
+        {!p.is_me ? <GiftModal visible={giftOpen} onClose={() => setGiftOpen(false)} recipientId={p.id} name={p.display_name} /> : null}
         {!p.is_me && p.you.mutual ? <Text style={[font.small, { color: colors.primary }]}>You follow each other, so messages are free.</Text> : null}
 
         <View style={{ gap: 10 }}>

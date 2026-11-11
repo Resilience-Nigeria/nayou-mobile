@@ -3,7 +3,7 @@ export type CardPhoto = { id?: string; url: string | null } | null;
 
 export type Card = {
   id: string; display_name: string; age: number; gender: string; relationship_goal: string | null; bio: string | null;
-  photo: CardPhoto; photo_count: number; verified: boolean; state: string | null;
+  photo: CardPhoto; photo_count: number; verified: boolean; online?: boolean; state: string | null;
   distance: { km: number | null; label: string }; reasons: string[]; match_score: number | null;
 };
 export type DiscoveryMeta = { sort: string; radius_km: number | null; has_more: boolean; next_cursor: string | null; expand_suggestion: { message?: string; radius?: string | number } | null };
@@ -26,14 +26,20 @@ export type PersonProfile = {
   current_location: { city: string | null; region: string | null; country: string | null } | null;
   photos: { id: string; url: string | null; width: number; height: number }[];
   stats: { likes: number; followers: number; following: number; messages_with_you: number };
-  you: { following: boolean; follows_you: boolean; mutual: boolean; liked: boolean };
+  you: { swipe: 'like' | 'pass' | 'super_like' | null; following: boolean; follows_you: boolean; mutual: boolean; liked: boolean };
 };
-export type Post = { id: string; body: string; created_at: string; mine: boolean; author: { id: string; display_name: string | null; photo: CardPhoto } };
+export type MediaCard = { id: string; kind: 'image' | 'video'; mime: string; url: string | null; width: number | null; height: number | null };
+export type Post = { id: string; body: string; media: MediaCard | null; created_at: string; mine: boolean; author: { id: string; display_name: string | null; photo: CardPhoto } };
 export type ChatStatus = { typing: boolean; other_read_at: string | null };
 export type LikeItem = { id: string; action: 'like' | 'super_like'; liked_at: string; matched: boolean; conversation_id: string | null; user: Person };
-export type Message = { id: string; client_message_id: string; sender_id: string; mine: boolean; body: string; message_type: string; created_at: string };
+export type Message = { id: string; client_message_id: string; sender_id: string; mine: boolean; body: string; message_type: string; media: MediaCard | null; created_at: string };
+export type HomePerson = { id: string; display_name: string; age: number; gender: string; relationship_goal: string | null; bio: string | null; state: string | null; photo: CardPhoto; photo_count: number; verified: boolean; online: boolean; following: boolean };
 
 export type Wallet = { coin_balance: number; message_cost: number };
+export type GiftRules = {
+  enabled: boolean; balance: number; min_amount: number; max_amount: number; min_balance_after_gift: number; min_balance_to_gift: number;
+  max_giftable: number; remaining_today: number | null; fee_percent: number; presets: number[];
+};
 export type WalletTx = { id: string; type: string; coins: number; balance: number; created_at: string };
 
 export type Package = { code: string; label: string | null; coins: number; price_minor: number; currency: string; price_display: string | null };
@@ -62,7 +68,7 @@ export type Appealable = { action_id: string; action: string; reason: string; cr
 export type PublicConfig = Record<string, number | boolean | string | string[] | number[]>;
 export type StateItem = { code: string; name: string };
 
-export const GENDERS = [['male', 'Man'], ['female', 'Woman']] as const;
+export const GENDERS = [['male', 'Male'], ['female', 'Female']] as const;
 export const GOALS = [['marriage', 'Marriage'], ['long_term', 'Long-term'], ['dating', 'Dating'], ['friendship', 'Friendship'], ['fun', 'Fun'], ['not_sure', 'Not sure yet']] as const;
 export const goalLabel = (g: string | null) => GOALS.find(([k]) => k === g)?.[1] ?? null;
 
@@ -75,8 +81,8 @@ export function heightLabel(cm: number | null): string | null {
 }
 
 export type CallInfo = {
-  id: string; conversation_id: string; status: 'ringing' | 'active' | 'ended' | 'declined' | 'missed' | 'cancelled' | 'failed';
-  end_reason: string | null; direction: 'incoming' | 'outgoing'; price_per_minute: number; coins_charged: number; duration_seconds: number;
+  id: string; conversation_id: string; type: 'audio' | 'video'; status: 'ringing' | 'active' | 'ended' | 'declined' | 'missed' | 'cancelled' | 'failed';
+  end_reason: string | null; direction: 'incoming' | 'outgoing'; price_per_second: number; price_per_minute: number; coins_charged: number; duration_seconds: number;
   created_at: string; answered_at: string | null;
   user: { id: string; display_name: string | null; photo: CardPhoto; verified: boolean; online?: boolean };
   livekit?: { url: string; token: string };

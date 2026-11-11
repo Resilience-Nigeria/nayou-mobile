@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -12,6 +12,21 @@ import { colors, font, space } from '../../theme/theme';
 
 type Tab = 'chats' | 'calls' | 'matches' | 'liked';
 const TABS: [Tab, string][] = [['chats', 'Chats'], ['calls', 'Calls'], ['matches', 'Matches'], ['liked', 'Liked']];
+
+const CALL_COLORS = { outgoing: '#2563EB', incoming: '#16A34A', missed: '#DC2626', unanswered: '#F59E0B' };
+
+/** Phone with an arrow: outgoing (blue), incoming (green), missed (red), your call that was not answered (amber). */
+function CallIcon({ c }: { c: { direction: string; status: string; type: string } }) {
+  const answered = c.status === 'ended';
+  const kind = answered ? c.direction : c.direction === 'incoming' ? 'missed' : 'unanswered';
+  const name = kind === 'incoming' ? 'phone-incoming' : kind === 'missed' ? 'phone-missed' : 'phone-outgoing';
+  return (
+    <View style={{ alignItems: 'center', gap: 2 }}>
+      <MaterialCommunityIcons name={name} size={24} color={CALL_COLORS[kind as keyof typeof CALL_COLORS]} />
+      {c.type === 'video' ? <Ionicons name="videocam" size={12} color={colors.textMuted} /> : null}
+    </View>
+  );
+}
 
 export default function Chats() {
   const [tab, setTab] = useState<Tab>('chats');
@@ -161,14 +176,14 @@ function CallList() {
       refreshing={q.isRefetching}
       onEndReached={() => q.hasNextPage && !q.isFetchingNextPage && q.fetchNextPage()}
       contentContainerStyle={listStyle}
-      ListEmptyComponent={<Empty icon="call-outline" title="No calls yet" text="Open a chat and tap the phone icon to start a voice call." />}
+      ListEmptyComponent={<Empty icon="call-outline" title="No calls yet" text="Open a chat and tap the phone or camera icon to start a call." />}
       renderItem={({ item }) => (
         <ListRow
           title={item.user.display_name ?? 'Member'}
-          subtitle={`${label(item)} · ${timeAgo(item.created_at)} ago`}
+          subtitle={`${item.type === 'video' ? 'Video · ' : ''}${label(item)} · ${timeAgo(item.created_at)} ago`}
           left={<Face user={item.user} />}
-          right={<Ionicons name={item.status === 'missed' && item.direction === 'incoming' ? 'call' : item.direction === 'outgoing' ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline'} size={24} color={item.status === 'missed' && item.direction === 'incoming' ? colors.danger : colors.primary} />}
-          onPress={() => startCall(item.conversation_id)}
+          right={<CallIcon c={item} />}
+          onPress={() => startCall(item.conversation_id, item.type)}
         />
       )}
     />
